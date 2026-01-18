@@ -253,7 +253,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
-              THẦY HÙNG - VẼ HÌNH THÔNG MINH
+              THẦY NAM - VẼ HÌNH THÔNG MINH
             </h1>
             <p className="text-xs text-slate-400 font-medium tracking-wide uppercase opacity-80">Trợ Lý Toán Học</p>
           </div>
