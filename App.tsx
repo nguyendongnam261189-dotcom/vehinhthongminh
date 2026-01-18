@@ -66,11 +66,16 @@ export default function App() {
     { id: '4', label: 'Tháng 4', value: 95, color: COLORS[6] }
   ]);
 
+  // NEW: titles for Bar chart
+  const [barChartTitle, setBarChartTitle] = useState<string>('Biểu đồ cột');
+  const [barXAxisTitle, setBarXAxisTitle] = useState<string>('Danh mục');
+  const [barYAxisTitle, setBarYAxisTitle] = useState<string>('Giá trị');
+
   // Double Bar (Grouped) Chart State
   const [series1Name, setSeries1Name] = useState<string>('Nhóm 1');
   const [series2Name, setSeries2Name] = useState<string>('Nhóm 2');
 
-  // NEW: titles for grouped chart
+  // Titles for grouped chart
   const [doubleChartTitle, setDoubleChartTitle] = useState<string>('Biểu đồ cột kép');
   const [doubleXAxisTitle, setDoubleXAxisTitle] = useState<string>('Danh mục');
   const [doubleYAxisTitle, setDoubleYAxisTitle] = useState<string>('Giá trị');
@@ -132,15 +137,18 @@ export default function App() {
     }
   };
 
-  // --- Pie Logic ---
+  // --- Pie Logic (WITH LEGEND) ---
   const generatePieChart = () => {
     const total = pieItems.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) return;
 
     const newShapes: Shape[] = [];
-    const cx = 400,
-      cy = 300,
-      r = 200;
+
+    // Shift pie left a bit to make room for legend
+    const cx = 320;
+    const cy = 300;
+    const r = 180;
+
     let startAngle = -Math.PI / 2;
 
     pieItems.forEach((item) => {
@@ -165,7 +173,7 @@ export default function App() {
       });
 
       const midAngle = startAngle + sliceAngle / 2;
-      const textR = r * 0.7;
+      const textR = r * 0.72;
       const tx = cx + textR * Math.cos(midAngle);
       const ty = cy + textR * Math.sin(midAngle);
       const percent = ((item.value / total) * 100).toFixed(1);
@@ -182,7 +190,54 @@ export default function App() {
         strokeStyle: 'solid',
         pattern: 'none'
       });
+
       startAngle = endAngle;
+    });
+
+    // Legend on the right
+    const legendX = cx + r + 70;
+    const legendY = cy - r + 30;
+    const rowH = 28;
+    const box = 16;
+
+    newShapes.push({
+      id: 'pie-legend-title',
+      type: ShapeType.TEXT,
+      x: legendX + 55,
+      y: legendY - 18,
+      content: 'Chú giải',
+      color: '#e2e8f0',
+      fontSize: 14
+    });
+
+    pieItems.forEach((item, idx) => {
+      const y = legendY + idx * rowH;
+
+      newShapes.push({
+        id: `pie-legend-box-${item.id}`,
+        type: ShapeType.POLYGON,
+        points: [
+          { x: legendX, y: y - box / 2 },
+          { x: legendX + box, y: y - box / 2 },
+          { x: legendX + box, y: y + box / 2 },
+          { x: legendX, y: y + box / 2 }
+        ],
+        fill: item.color,
+        opacity: 1,
+        color: '#ffffff',
+        strokeWidth: 1,
+        pattern: 'none'
+      });
+
+      newShapes.push({
+        id: `pie-legend-text-${item.id}`,
+        type: ShapeType.TEXT,
+        x: legendX + 95,
+        y: y + 4,
+        content: `${item.label}: ${item.value}`,
+        color: '#e2e8f0',
+        fontSize: 13
+      });
     });
 
     setShapes(newShapes);
@@ -190,17 +245,21 @@ export default function App() {
     setSelectedShapeId(null);
   };
 
-  // --- Bar Logic ---
+  // --- Bar Logic (ADD TITLE + AXIS TITLES) ---
   const generateBarChart = () => {
     if (barItems.length === 0) return;
     const newShapes: Shape[] = [];
-    const originX = 100;
+
+    // little padding left for Y title
+    const originX = 90;
     const originY = 500;
     const chartWidth = 600;
     const chartHeight = 400;
-    const maxValue = Math.max(...barItems.map((i) => i.value));
-    const scaleFactor = maxValue === 0 ? 1 : (chartHeight - 50) / maxValue;
 
+    const maxValue = Math.max(...barItems.map((i) => i.value), 0);
+    const scaleFactor = maxValue === 0 ? 1 : (chartHeight - 70) / maxValue;
+
+    // Axes
     newShapes.push({
       id: 'axis-y',
       type: ShapeType.LINE,
@@ -226,10 +285,51 @@ export default function App() {
       arrow: true
     });
 
+    // Chart Title
+    if (barChartTitle?.trim()) {
+      newShapes.push({
+        id: 'bar-title',
+        type: ShapeType.TEXT,
+        x: originX + chartWidth / 2,
+        y: originY - chartHeight - 25,
+        content: barChartTitle.trim(),
+        color: '#e2e8f0',
+        fontSize: 18
+      });
+    }
+
+    // Y Axis Title (left side)
+    if (barYAxisTitle?.trim()) {
+      newShapes.push({
+        id: 'bar-y-title',
+        type: ShapeType.TEXT,
+        x: originX - 45,
+        y: originY - chartHeight / 2,
+        content: barYAxisTitle.trim(),
+        color: '#cbd5e1',
+        fontSize: 13
+      });
+    }
+
+    // X Axis Title (bottom center)
+    if (barXAxisTitle?.trim()) {
+      newShapes.push({
+        id: 'bar-x-title',
+        type: ShapeType.TEXT,
+        x: originX + chartWidth / 2,
+        y: originY + 55,
+        content: barXAxisTitle.trim(),
+        color: '#cbd5e1',
+        fontSize: 13
+      });
+    }
+
+    // Bars
     barItems.forEach((item, index) => {
       const gap = 30;
       const barWidth = (chartWidth - gap * (barItems.length + 1)) / barItems.length;
       const barHeight = item.value * scaleFactor;
+
       const x = originX + gap + index * (barWidth + gap);
       const y = originY - barHeight;
 
@@ -248,6 +348,7 @@ export default function App() {
         strokeWidth: 2,
         pattern: 'none'
       });
+
       newShapes.push({
         id: `label-${item.id}`,
         type: ShapeType.TEXT,
@@ -257,6 +358,7 @@ export default function App() {
         color: '#e2e8f0',
         fontSize: 14
       });
+
       newShapes.push({
         id: `val-${item.id}`,
         type: ShapeType.TEXT,
@@ -279,17 +381,17 @@ export default function App() {
 
     const newShapes: Shape[] = [];
 
-    /**
-     * IMPORTANT FIX:
-     * - Chừa không gian bên phải để đặt chú giải (legend) không đè lên cột.
-     * - Giảm chartWidth để có “legend area” nằm trong canvas.
-     */
+    // leave space on right for legend
     const originX = 90;
     const originY = 500;
-    const chartWidth = 500; // reduced from 600 to create space for legend
+    const chartWidth = 500;
     const chartHeight = 400;
 
-    const maxValue = Math.max(...doubleBarItems.map((i) => i.value1), ...doubleBarItems.map((i) => i.value2), 0);
+    const maxValue = Math.max(
+      ...doubleBarItems.map((i) => i.value1),
+      ...doubleBarItems.map((i) => i.value2),
+      0
+    );
     const scaleFactor = maxValue === 0 ? 1 : (chartHeight - 70) / maxValue;
 
     // Axes
@@ -318,7 +420,7 @@ export default function App() {
       arrow: true
     });
 
-    // Chart Title (top center)
+    // Chart Title
     if (doubleChartTitle?.trim()) {
       newShapes.push({
         id: 'dbl-title',
@@ -331,7 +433,7 @@ export default function App() {
       });
     }
 
-    // Y Axis Title (left side, horizontal)
+    // Y Axis Title
     if (doubleYAxisTitle?.trim()) {
       newShapes.push({
         id: 'dbl-y-title',
@@ -344,7 +446,7 @@ export default function App() {
       });
     }
 
-    // X Axis Title (bottom center)
+    // X Axis Title
     if (doubleXAxisTitle?.trim()) {
       newShapes.push({
         id: 'dbl-x-title',
@@ -426,7 +528,7 @@ export default function App() {
         fontSize: 14
       });
 
-      // Category label (center of group)
+      // Category label
       newShapes.push({
         id: `label2-${item.id}`,
         type: ShapeType.TEXT,
@@ -438,18 +540,13 @@ export default function App() {
       });
     });
 
-    /**
-     * LEGEND FIX:
-     * Đặt legend ở “khu bên phải” của chart (ngoài vùng cột),
-     * nên không bị đè nữa.
-     */
-    const legendX = originX + chartWidth + 35; // right of chart
+    // Legend right side
+    const legendX = originX + chartWidth + 35;
     const legendY = originY - chartHeight + 60;
 
     const c1 = doubleBarItems[0]?.color1 || COLORS[3];
     const c2 = doubleBarItems[0]?.color2 || COLORS[5];
 
-    // swatch 1
     newShapes.push({
       id: 'legend2-box-1',
       type: ShapeType.POLYGON,
@@ -475,7 +572,6 @@ export default function App() {
       fontSize: 14
     });
 
-    // swatch 2
     newShapes.push({
       id: 'legend2-box-2',
       type: ShapeType.POLYGON,
@@ -571,14 +667,18 @@ export default function App() {
     setIsPlaying(false);
   };
 
-  const handleUpdateShape = (updatedShape: Shape) => setShapes((prev) => prev.map((s) => (s.id === updatedShape.id ? updatedShape : s)));
+  const handleUpdateShape = (updatedShape: Shape) =>
+    setShapes((prev) => prev.map((s) => (s.id === updatedShape.id ? updatedShape : s)));
+
   const handleDeleteShape = (id: string) => {
     setShapes((prev) => prev.filter((s) => s.id !== id));
     setSelectedShapeId(null);
   };
 
+  // Reuse input UI for Pie/Bar but Bar has extra title inputs
   const renderDataInput = (isBar: boolean) => {
     const items = isBar ? barItems : pieItems;
+
     return (
       <div className="p-4 border-b border-slate-800 flex-1 overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
@@ -590,6 +690,46 @@ export default function App() {
             <Plus className="w-4 h-4" />
           </button>
         </div>
+
+        {/* NEW: Bar chart titles */}
+        {isBar && (
+          <div className="space-y-2 mb-4">
+            <div className="bg-slate-800 p-2 rounded border border-slate-700">
+              <label className="text-[11px] text-slate-400">Tên biểu đồ</label>
+              <input
+                type="text"
+                value={barChartTitle}
+                onChange={(e) => setBarChartTitle(e.target.value)}
+                className="w-full bg-transparent text-sm border-b border-slate-600 focus:border-teal-500 outline-none"
+                placeholder="Ví dụ: Doanh thu theo tháng"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-slate-800 p-2 rounded border border-slate-700">
+                <label className="text-[11px] text-slate-400">Tiêu đề trục X</label>
+                <input
+                  type="text"
+                  value={barXAxisTitle}
+                  onChange={(e) => setBarXAxisTitle(e.target.value)}
+                  className="w-full bg-transparent text-sm border-b border-slate-600 focus:border-teal-500 outline-none"
+                  placeholder="Ví dụ: Tháng"
+                />
+              </div>
+              <div className="bg-slate-800 p-2 rounded border border-slate-700">
+                <label className="text-[11px] text-slate-400">Tiêu đề trục Y</label>
+                <input
+                  type="text"
+                  value={barYAxisTitle}
+                  onChange={(e) => setBarYAxisTitle(e.target.value)}
+                  className="w-full bg-transparent text-sm border-b border-slate-600 focus:border-teal-500 outline-none"
+                  placeholder="Ví dụ: Triệu đồng"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2 mb-4">
           {items.map((item) => (
             <div key={item.id} className="flex gap-2 items-center bg-slate-800 p-2 rounded border border-slate-700">
@@ -618,6 +758,7 @@ export default function App() {
             </div>
           ))}
         </div>
+
         <button
           onClick={isBar ? generateBarChart : generatePieChart}
           className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-2 rounded-lg shadow-lg shadow-teal-900/50 flex items-center justify-center gap-2"
@@ -641,7 +782,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* NEW: Chart & Axis Titles */}
+        {/* Chart & Axis Titles */}
         <div className="space-y-2 mb-4">
           <div className="bg-slate-800 p-2 rounded border border-slate-700">
             <label className="text-[11px] text-slate-400">Tên biểu đồ</label>
