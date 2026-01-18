@@ -1,0 +1,7 @@
+{
+  "name": "THẦY HÙNG - VẼ HÌNH THÔNG MINH",
+  "description": "An AI-powered geometry visualization tool that converts Vietnamese math problems into interactive diagrams with voice explanations.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
